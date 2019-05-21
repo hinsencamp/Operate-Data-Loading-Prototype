@@ -11,9 +11,12 @@ Interdependent Components
 ## Diagram 
 * changes when 'workflow' Filter is changed 
 
-## Overlays 
+## Statistics
 * change when 'incident' Filter is changed
-* changes when 'workflow' Filter is changed
+* changes when 'workflow' Filter is changed 
+
+## Overlays 
+* require statistics 
 * require Diagram to be fully loaded 
 
 
