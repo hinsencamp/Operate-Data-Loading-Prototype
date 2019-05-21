@@ -8,6 +8,7 @@ const DATA_STATE = {
   LOADED: 'loaded'
 }
 
+// The DataManager allows components to publish and subscribe to events.
 function DataManager(){
   this.subscribers = [];
 }
@@ -25,8 +26,8 @@ DataManager.prototype.publish = function(topic, value){
 
 }
 
+// When the applied filter is changed the new filter is published
 function Filter(dataManager){
-  // filter change --> new Diagram
   this.appliedFilters = {
     diagramName: "someWorkflow",
     incidents: true
@@ -47,39 +48,69 @@ function Diagram(dataManager){
 
 
 Diagram.prototype.subscribeForUpdates = function(){
-  this.dataManager.subscribe(['filters'], (newFilters)=>{
-    if(newFilters.diagramName != this.diagram.name){
-
-      this.dataManager.publish('data-state', DATA_STATE.LOADING)
+  this.dataManager.subscribe(['filters'], ({diagramName})=>{
+    if(diagramName != this.diagram.name){
+      this.dataManager.publish('diagram-state', {diagramState: DATA_STATE.LOADING})
       // Add fetching Data here
-
-      this.diagram = {...this.diagram,
-      name: newFilters.diagramName
-      };
-
-      this.dataManager.publish('data-state', DATA_STATE.LOADED)
-
-    }  
+      setTimeout(() => {
+        this.diagram = {...this.diagram,
+        name: diagramName
+        }
+        this.dataManager.publish('diagram-state', {diagramState:DATA_STATE.LOADED})
+      }, 4500, 'funky'); 
+    }
 });
 }
 
-function Overlays(dataManager){
-  // filter change --> new statistics are loaded
-  this.overlays = {};
+// New statistics are fetched when ever the filter changes. 
+function Statistics(dataManager){
+  this.statistics = {};
   this.dataManager = dataManager
-  // console.log('Diagram was updated:', this.diagram);
+}
+
+Statistics.prototype.subscribeForUpdates =function(){
+  this.dataManager.subscribe(['filters'], ({diagramName,incidents})=> {
+    this.dataManager.publish('statistics-state', {statisticsState: DATA_STATE.LOADING})
+    setTimeout(() => {
+        this.statistics = {...this.statistics,
+        incidents
+        }
+        this.dataManager.publish('statistics-state', {statisticsState: DATA_STATE.LOADED})
+      }, 1500, 'funky'); 
+    
+    })
+  };
+
+// Overlays can be rendered after statistics have been fetched and a diagram exists.
+function Overlays(dataManager){
+  this.overlays = {};
+  this.preRequirements = {};
+  this.dataManager = dataManager
 }
 
 Overlays.prototype.subscribeForUpdates = function(){
-  this.dataManager.subscribe(['data-state'], (newState)=>{
-   
-   if(newState === DATA_STATE.LOADED){
-     console.log('overlays can now be  rendered');
-    //  render Overlays
+  this.dataManager.subscribe(['diagram-state', 'statistics-state'], (newState)=>{
+    
+   if(!!newState.diagramState && newState.diagramState === DATA_STATE.LOADED){
+     this.preRequirements = {...this.preRequirements, diagram: DATA_STATE.LOADED}
+    console.log('diagram loaded');
+   }
+
+   if(!!newState.statisticsState && newState.statisticsState === DATA_STATE.LOADED){
+     this.preRequirements = {...this.preRequirements, statistics: DATA_STATE.LOADED}
+     console.log('statistics loaded');
+     
+   }
+
+   if(this.preRequirements.statistics && this.preRequirements.diagram){
+     console.log('render overlays')
    }
 
   })
 };
+
+
+
 /** Setup */ 
 const dataM = new DataManager();
 
@@ -87,6 +118,9 @@ const dataM = new DataManager();
 const filter = new Filter(dataM);
 const diagram = new Diagram(dataM);
 diagram.subscribeForUpdates();
+
+const statistics = new Statistics(dataM);
+statistics.subscribeForUpdates();
 
 const overlays = new Overlays(dataM);
 overlays.subscribeForUpdates();
