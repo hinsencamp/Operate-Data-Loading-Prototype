@@ -1,6 +1,6 @@
 /** Data Fetching Manager */
 
-const DATA_STATES = {
+const DATA_STATE = {
   UNAVAILABLE: 'unavailable',
   LOAD_FAILED: 'failed',
   LOADING: 'loading',
@@ -50,20 +50,36 @@ Diagram.prototype.subscribeForUpdates = function(){
   this.dataManager.subscribe(['filters'], (newFilters)=>{
     if(newFilters.diagramName != this.diagram.name){
 
+      this.dataManager.publish('data-state', DATA_STATE.LOADING)
       // Add fetching Data here
 
       this.diagram = {...this.diagram,
       name: newFilters.diagramName
       };
-      console.log('Diagram was updated:', this.diagram);
+
+      this.dataManager.publish('data-state', DATA_STATE.LOADED)
+
     }  
 });
 }
 
-function Statistics(){
+function Overlays(dataManager){
   // filter change --> new statistics are loaded
+  this.overlays = {};
+  this.dataManager = dataManager
+  // console.log('Diagram was updated:', this.diagram);
 }
 
+Overlays.prototype.subscribeForUpdates = function(){
+  this.dataManager.subscribe(['data-state'], (newState)=>{
+   
+   if(newState === DATA_STATE.LOADED){
+     console.log('overlays can now be  rendered');
+    //  render Overlays
+   }
+
+  })
+};
 /** Setup */ 
 const dataM = new DataManager();
 
@@ -72,5 +88,8 @@ const filter = new Filter(dataM);
 const diagram = new Diagram(dataM);
 diagram.subscribeForUpdates();
 
+const overlays = new Overlays(dataM);
+overlays.subscribeForUpdates();
 // add new 
 filter.changeAppliedFilters('diagramName', "ComplexWorkflow");
+
