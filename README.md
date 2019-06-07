@@ -37,7 +37,7 @@ Example:
 * *Header* - requires to load 3 metrics values to display it on three different views (Dashboard, InstanesList, InstanceDetails). The Dashboard also shows the same values on a MetricTile.
 
 
-## Solution Sketch(s)
+## Solution Sketch
 
 Implement a Pub/Sub architecture which allows components to publish their own data loading updates & subscribe to other components status messages. The same architecture can be used to subscribe components to a global "DataLoading" Component which published messages whenever new data is available.   
 
